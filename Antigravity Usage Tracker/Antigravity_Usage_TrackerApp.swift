@@ -12,10 +12,13 @@ struct Antigravity_Usage_TrackerApp: App {
     @StateObject private var quotaManager = QuotaManager()
 
     var body: some Scene {
-        // "gauge.with.dots.needle.bottom.50percent" gives us a nice meter icon
         MenuBarExtra("Antigravity Quota", systemImage: quotaManager.menuBarIcon) {
             MenuBarView(quotaManager: quotaManager)
         }
-        .menuBarExtraStyle(.window) // Allows for a custom popover instead of a standard list menu
+        .menuBarExtraStyle(.window)
+        
+        Settings {
+            SettingsView(quotaManager: quotaManager)
+        }
     }
 }

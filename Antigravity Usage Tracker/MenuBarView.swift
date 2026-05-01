@@ -17,22 +17,14 @@ struct MenuBarView: View {
                 Text("Antigravity Usage")
                     .font(.headline)
                 Spacer()
-                if quotaManager.isLoading {
-                    ProgressView()
-                        .scaleEffect(0.5)
-                        .frame(height: 10)
-                }
+                if quotaManager.isLoading { ProgressView().scaleEffect(0.5).frame(height: 10) }
             }
-            
             Divider()
             
             if let error = quotaManager.errorMessage {
                 HStack {
-                    Image(systemName: "xmark.octagon.fill")
-                        .foregroundColor(.red)
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    Image(systemName: "xmark.octagon.fill").foregroundColor(.red)
+                    Text(error).font(.subheadline).foregroundColor(.secondary)
                 }
                 
                 ScrollView {
@@ -46,38 +38,16 @@ struct MenuBarView: View {
                 .cornerRadius(6)
                 
             } else if quotaManager.modelQuotas.isEmpty {
-                Text("No model quotas found.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                Text("No model quotas found.").font(.subheadline).foregroundColor(.secondary)
             } else {
-                ForEach(quotaManager.modelQuotas) { quota in
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            Text(formatModelName(quota.name))
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            
-                            Spacer()
-                            
-                            Text("\(quota.percentage)%")
-                                .bold()
-                                .foregroundColor(colorForPercentage(quota.percentage))
-                        }
-                        
-                        ProgressView(value: Double(quota.percentage), total: 100.0)
-                            .progressViewStyle(LinearProgressViewStyle(
-                                tint: colorForPercentage(quota.percentage)
-                            ))
-                            .padding(.bottom, 2)
-                        
-                        // NEW: Show Reset Time
-                        if let resetDate = quota.resetTime {
-                            Text(formatResetTime(resetDate))
-                                .font(.system(size: 10)) // Tiny font so it doesn't clutter
-                                .foregroundColor(.secondary)
-                        }
+                
+                // MARK: - Quota Rendering Logic
+                if quotaManager.isGroupingEnabled {
+                    renderGroupedQuotas()
+                } else {
+                    ForEach(quotaManager.modelQuotas) { quota in
+                        QuotaRowView(name: formatModelName(quota.name), percentage: quota.percentage, resetDate: quota.resetTime)
                     }
-                    .padding(.vertical, 4)
                 }
                 
                 Text("Last updated: \(quotaManager.lastUpdated.formatted(date: .omitted, time: .shortened))")
@@ -90,25 +60,92 @@ struct MenuBarView: View {
             
             // Footer Controls
             HStack {
-                Button("Refresh") {
-                    Task { await quotaManager.fetchQuota() }
-                }
-                .keyboardShortcut("r", modifiers: .command)
-                .buttonStyle(.plain)
-                .foregroundColor(.blue)
-                
+                Button("Refresh") { Task { await quotaManager.fetchQuota() } }
+                    .keyboardShortcut("r", modifiers: .command)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.blue)
+                            
                 Spacer()
-                
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
+                            
+                // NEW: Modern SwiftUI SettingsLink
+                SettingsLink {
+                    Text("Settings...")
                 }
-                .keyboardShortcut("q", modifiers: .command)
+                .keyboardShortcut(",", modifiers: .command)
                 .buttonStyle(.plain)
-                .foregroundColor(.red)
+                            
+                Spacer()
+                            
+                Button("Quit") { NSApplication.shared.terminate(nil) }
+                    .keyboardShortcut("q", modifiers: .command)
+                    .buttonStyle(.plain)
+                    .foregroundColor(.red)
             }
         }
         .padding()
         .frame(width: 320)
+    }
+    
+    // MARK: - Rendering Helpers
+    @ViewBuilder
+    private func renderGroupedQuotas() -> some View {
+        // Find all models that are inside ANY bucket (lowercased for safety)
+        let groupedModelNames = Set(quotaManager.buckets.flatMap { bucket in
+            bucket.models.map { $0.lowercased().trimmingCharacters(in: .whitespaces) }
+        })
+            
+        // 1. Render Defined Buckets
+        ForEach(quotaManager.buckets) { bucket in
+            // Make the search entirely case-insensitive
+            if let matchedQuota = quotaManager.modelQuotas.first(where: { liveQuota in
+                bucket.models.contains { targetModel in
+                    targetModel.lowercased().trimmingCharacters(in: .whitespaces) == liveQuota.name.lowercased()
+                }
+            }) {
+                QuotaRowView(name: bucket.name, percentage: matchedQuota.percentage, resetDate: matchedQuota.resetTime)
+            }
+        }
+        
+        // 2. Render Leftover (Ungrouped) Models
+        let leftoverModels = quotaManager.modelQuotas.filter { liveQuota in
+            !groupedModelNames.contains(liveQuota.name.lowercased())
+        }
+        
+        if !leftoverModels.isEmpty {
+            if !quotaManager.buckets.isEmpty { Divider().padding(.vertical, 4) }
+            
+            ForEach(leftoverModels) { quota in
+                QuotaRowView(name: formatModelName(quota.name), percentage: quota.percentage, resetDate: quota.resetTime)
+            }
+        }
+    }
+    
+    private func formatModelName(_ name: String) -> String {
+        return name.replacingOccurrences(of: "-", with: " ").capitalized
+    }
+}
+
+struct QuotaRowView: View {
+    let name: String
+    let percentage: Int
+    let resetDate: Date?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(name).font(.subheadline).fontWeight(.medium)
+                Spacer()
+                Text("\(percentage)%").bold().foregroundColor(colorForPercentage(percentage))
+            }
+            ProgressView(value: Double(percentage), total: 100.0)
+                .progressViewStyle(LinearProgressViewStyle(tint: colorForPercentage(percentage)))
+                .padding(.bottom, 2)
+            
+            if let resetDate = resetDate {
+                Text(formatResetTime(resetDate)).font(.system(size: 10)).foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
     }
     
     private func colorForPercentage(_ percentage: Int) -> Color {
@@ -119,28 +156,16 @@ struct MenuBarView: View {
         }
     }
     
-    private func formatModelName(_ name: String) -> String {
-        return name.replacingOccurrences(of: "-", with: " ").capitalized
-    }
-    
-    // NEW: Helper to format the Date into "Resets at 4:00 PM" or "Resets Tomorrow"
     private func formatResetTime(_ date: Date) -> String {
-        // If the date has already passed, the server just hasn't generated a new one yet
-        if date < Date() {
-            return "Reset available"
-        }
-        
+        if date < Date() { return "Reset available" }
         let formatter = DateFormatter()
-        
-        // If the reset happens today, just show time. If it's a weekly reset, show day + time.
         if Calendar.current.isDateInToday(date) {
             formatter.dateFormat = "'Resets at' h:mm a"
         } else if Calendar.current.isDateInTomorrow(date) {
             formatter.dateFormat = "'Resets tomorrow at' h:mm a"
         } else {
-            formatter.dateFormat = "'Resets' EEE 'at' h:mm a" // e.g. "Resets Mon at 4:00 PM"
+            formatter.dateFormat = "'Resets' EEE 'at' h:mm a"
         }
-        
         return formatter.string(from: date)
     }
 }

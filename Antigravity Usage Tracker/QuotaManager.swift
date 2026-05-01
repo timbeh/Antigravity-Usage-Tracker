@@ -36,6 +36,12 @@ struct ModelQuota: Identifiable {
     let resetTime: Date?
 }
 
+// MARK: - Quota Buckets
+struct QuotaBucket: Codable, Identifiable, Hashable {
+    var id = UUID()
+    var name: String
+    var models: [String]
+}
 
 struct ServerConfig {
     let ports: [Int]
@@ -52,6 +58,18 @@ class QuotaManager: ObservableObject {
     // Debug info directly in the app
     @Published var rawResponse: String = "Initializing..."
     
+    // MARK: - Grouping Settings
+    @Published var isGroupingEnabled: Bool = false {
+        didSet { UserDefaults.standard.set(isGroupingEnabled, forKey: "isGroupingEnabled") }
+    }
+    @Published var buckets: [QuotaBucket] = [] {
+        didSet {
+            if let data = try? JSONEncoder().encode(buckets) {
+                UserDefaults.standard.set(data, forKey: "savedBuckets")
+            }
+        }
+    }
+    
     var menuBarIcon: String {
         let lowestPercentage = modelQuotas.map { $0.percentage }.min() ?? 100
         switch lowestPercentage {
@@ -64,6 +82,21 @@ class QuotaManager: ObservableObject {
     private var timer: Timer?
     
     init() {
+        // Load Settings
+        self.isGroupingEnabled = UserDefaults.standard.bool(forKey: "isGroupingEnabled")
+            
+        if let data = UserDefaults.standard.data(forKey: "savedBuckets"),
+            let saved = try? JSONDecoder().decode([QuotaBucket].self, from: data) {
+            self.buckets = saved
+        } else {
+            // First Launch Default Buckets
+            self.buckets = [
+                QuotaBucket(name: "Gemini 3.1 Pro", models:["Gemini 3.1 Pro (High)", "Gemini 3.1 Pro (Low)"]),
+                QuotaBucket(name: "Claude Thinking & GPT 120B", models:["Claude Sonnet 4.6 (Thinking)", "Claude Opus 4.6 (Thinking)", "GPT-OSS 120B (Medium)"]),
+                QuotaBucket(name: "Gemini 3 Flash", models: ["Gemini 3 Flash"])
+            ]
+        }
+            
         timer = Timer.scheduledTimer(withTimeInterval: 900, repeats: true) { [weak self] _ in
             Task { await self?.fetchQuota() }
         }
