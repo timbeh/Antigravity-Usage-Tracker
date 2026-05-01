@@ -7,9 +7,8 @@
 
 A beautifully native, lightning-fast macOS Menu Bar app that tracks your Google Antigravity (Codeium/Windsurf) LLM quotas in real-time. 
 
-Built entirely in **SwiftUI**, it connects directly to your local IDE language server to instantly display your remaining AI requests for Claude 3.5 Sonnet, Gemini Pro, GPT-4o, and more—without requiring Node.js, external CLI tools, or cloud authentication.
+Built entirely in **SwiftUI**, it connects directly to your local IDE language server to instantly display your remaining usage quotas in Antigravity, without requiring Node.js, external CLI tools, or cloud authentication.
 
-![Hero Image / Screenshot Placeholder](https://via.placeholder.com/800x400.png?text=Add+a+Screenshot+of+your+Menu+Bar+App+Here)
 
 ## ✨ Why this exists
 Keeping track of premium AI usage limits inside the IDE can be frustrating. While [other excellent tools exist](https://github.com/skainguyen1412/antigravity-usage), they require Node.js, `npm` global installs, and shell wrappers running constantly in the background. 
@@ -29,7 +28,7 @@ This project was built to be the **ultimate native macOS experience**. It runs p
 
 ## 🛠 Installation
 
-### Option 1: Download the App (Recommended)
+### Option 1: Download the App
 1. Go to the [Releases](#) tab.
 2. Download `AntigravityTracker.app.zip`.
 3. Unzip and drag the app into your `Applications` folder.
@@ -38,7 +37,7 @@ This project was built to be the **ultimate native macOS experience**. It runs p
 ### Option 2: Build from Source
 1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Antigravity-Usage-Tracker.git
+   git clone https://github.com/timbeh/Antigravity-Usage-Tracker.git
    ```
 2. Open `Antigravity-Usage-Tracker.xcodeproj` in Xcode 14+.
 3. Ensure **App Sandbox** is disabled in your `Signing & Capabilities` tab (this is required so the app can scan the local `ps` process tree to find the IDE's dynamic port).
@@ -50,7 +49,7 @@ This project was built to be the **ultimate native macOS experience**. It runs p
 
 Antigravity frequently shares quota limits across multiple models (e.g., *Claude 4.6 Sonnet Thinking* and *Claude 4.6 Opus Thinking* draw from the exact same token bucket). 
 
-Instead of showing you three identical progress bars, this app includes a powerful **Settings Interface** (`Cmd + ,`) allowing you to group them:
+Instead of showing you three identical progress bars, this app includes a powerful **Settings Interface** allowing you to group them:
 
 1. Click on the Menu Bar icon and select **"Settings..."**
 2. Enable **Quota Grouping**.
@@ -58,13 +57,11 @@ Instead of showing you three identical progress bars, this app includes a powerf
 4. Look at the blue **Live IDs** cheat sheet at the top of the settings window, and paste the exact model slugs you want to group into the text box (comma-separated).
 5. Your menu bar will instantly collapse them into one clean progress bar!
 
-![Settings Screenshot Placeholder](https://via.placeholder.com/600x300.png?text=Add+a+Screenshot+of+the+Settings+Window+Here)
-
 ---
 
 ## 🧠 How it works under the hood
 
-When Google Antigravity (powered by Windsurf/Codeium) boots up in your IDE, it launches a local background Language Server. This server generates a dynamic, randomized port and a secure CSRF token to prevent unauthorized access.
+When Google Antigravity boots up it's IDE, it launches a local background Language Server. This server generates a dynamic, randomized port and a secure CSRF token to prevent unauthorized access.
 
 This Swift app bypasses the need for cloud authentication by using a **Dual-Discovery** system to handshake directly with that local server:
 
@@ -79,7 +76,7 @@ Because it connects locally, **it only updates when your IDE is open**.
 ## 🙏 Acknowledgements
 
 Massive credit to the open-source community that helped reverse-engineer the Antigravity/Windsurf local APIs.
-* Inspiration and local API endpoint structure adapted from[hamed-elfayome/Claude-Usage-Tracker](https://github.com/hamed-elfayome/Claude-Usage-Tracker) and [skainguyen1412/antigravity-usage](https://github.com/skainguyen1412/antigravity-usage).
+* Inspiration and local API endpoint structure adapted from [skainguyen1412/antigravity-usage](https://github.com/skainguyen1412/antigravity-usage) and [hamed-elfayome/Claude-Usage-Tracker](https://github.com/hamed-elfayome/Claude-Usage-Tracker).
 
 ## 📝 License
 
