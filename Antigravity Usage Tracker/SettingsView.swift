@@ -101,5 +101,8 @@ struct SettingsView: View {
             }
         }
         .frame(width: 480, height: 500)
+        .onAppear {
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+        }
     }
 }

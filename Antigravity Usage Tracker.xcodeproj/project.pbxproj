@@ -8,24 +8,12 @@
 
 /* Begin PBXFileReference section */
 		ECC2DC762FA4CF2F00D8A13F /* Antigravity Usage Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Antigravity Usage Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ECC2DCA62FA54C3B00D8A13F /* Antigravity-Usage-Tracker-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Antigravity-Usage-Tracker-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		ECC2DC9A2FA54B7F00D8A13F /* Exceptions for "Antigravity Usage Tracker" folder in "Antigravity Usage Tracker" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Antigravity-Usage-Tracker-Info.plist",
-			);
-			target = ECC2DC752FA4CF2F00D8A13F /* Antigravity Usage Tracker */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		ECC2DC782FA4CF2F00D8A13F /* Antigravity Usage Tracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				ECC2DC9A2FA54B7F00D8A13F /* Exceptions for "Antigravity Usage Tracker" folder in "Antigravity Usage Tracker" target */,
-			);
 			path = "Antigravity Usage Tracker";
 			sourceTree = "<group>";
 		};
@@ -45,6 +33,7 @@
 		ECC2DC6D2FA4CF2F00D8A13F = {
 			isa = PBXGroup;
 			children = (
+				ECC2DCA62FA54C3B00D8A13F /* Antigravity-Usage-Tracker-Info.plist */,
 				ECC2DC782FA4CF2F00D8A13F /* Antigravity Usage Tracker */,
 				ECC2DC772FA4CF2F00D8A13F /* Products */,
 			);

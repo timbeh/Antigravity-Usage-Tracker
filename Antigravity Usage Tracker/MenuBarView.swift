@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var quotaManager: QuotaManager
+    @State private var isHoveringSettings = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -16,8 +17,29 @@ struct MenuBarView: View {
             HStack {
                 Text("Antigravity Usage")
                     .font(.headline)
+                
+                if quotaManager.isLoading {
+                    ProgressView()
+                        .scaleEffect(0.5)
+                        .frame(height: 10)
+                        .padding(.leading, 4)
+                }
+                
                 Spacer()
-                if quotaManager.isLoading { ProgressView().scaleEffect(0.5).frame(height: 10) }
+                
+                // Settings Icon in Top Right
+                SettingsLink {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14))
+                        .foregroundColor(isHoveringSettings ? .primary : .secondary)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    isHoveringSettings = hovering
+                }
+                // Adds a little padding so the click target is easier to hit
+                .padding(.trailing, 2)
             }
             Divider()
             
@@ -64,15 +86,6 @@ struct MenuBarView: View {
                     .keyboardShortcut("r", modifiers: .command)
                     .buttonStyle(.plain)
                     .foregroundColor(.blue)
-                            
-                Spacer()
-                            
-                // NEW: Modern SwiftUI SettingsLink
-                SettingsLink {
-                    Text("Settings...")
-                }
-                .keyboardShortcut(",", modifiers: .command)
-                .buttonStyle(.plain)
                             
                 Spacer()
                             
