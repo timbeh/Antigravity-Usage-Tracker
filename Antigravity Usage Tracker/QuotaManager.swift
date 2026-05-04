@@ -46,8 +46,8 @@ struct QuotaBucket: Codable, Identifiable, Hashable {
 enum MenuBarDisplayMode: Codable, Equatable, Hashable {
     case staticIcon
     case modelCount
-    case donutCircle(modelID: String)
-    case progressBar(modelID: String)
+    case donutCircle(targetID: String, isBucket: Bool)
+    case progressBar(targetID: String, isBucket: Bool)
     
     var displayName: String {
         switch self {
@@ -235,7 +235,62 @@ class QuotaManager: ObservableObject {
             self.errorMessage = "Failed to fetch data"
         }
         
-        isLoading = false
+    isLoading = false
+    }
+    
+    func resolveQuota(id: String, isBucket: Bool) -> ModelQuota? {
+        if isBucket {
+            guard let bucket = buckets.first(where: { $0.id.uuidString == id }) else { return nil }
+            // Find the first model in the bucket that has a live quota
+            if let matchedQuota = modelQuotas.first(where: { liveQuota in
+                bucket.models.contains { targetModel in
+                    targetModel.lowercased().trimmingCharacters(in: .whitespaces) == liveQuota.name.lowercased()
+                }
+            }) {
+                // Return a virtual quota with the bucket's name
+                return ModelQuota(id: bucket.id.uuidString, name: bucket.name, percentage: matchedQuota.percentage, resetTime: matchedQuota.resetTime)
+            }
+            return nil
+        } else {
+            return modelQuotas.first(where: { $0.id == id })
+        }
+    }
+    
+    func resolveGroupedCount() -> (remaining: Int, total: Int) {
+        if !isGroupingEnabled || buckets.isEmpty {
+            let total = modelQuotas.count
+            let remaining = modelQuotas.filter { $0.percentage > 0 }.count
+            return (remaining, total)
+        }
+        
+        // 1. Buckets
+        var bucketCount = 0
+        var bucketRemaining = 0
+        
+        // Track models that are grouped
+        let groupedModelNames = Set(buckets.flatMap { bucket in
+            bucket.models.map { $0.lowercased().trimmingCharacters(in: .whitespaces) }
+        })
+        
+        for bucket in buckets {
+            if let matchedQuota = modelQuotas.first(where: { liveQuota in
+                bucket.models.contains { targetModel in
+                    targetModel.lowercased().trimmingCharacters(in: .whitespaces) == liveQuota.name.lowercased()
+                }
+            }) {
+                bucketCount += 1
+                if matchedQuota.percentage > 0 {
+                    bucketRemaining += 1
+                }
+            }
+        }
+        
+        // 2. Leftovers
+        let leftovers = modelQuotas.filter { !groupedModelNames.contains($0.name.lowercased()) }
+        let leftoverCount = leftovers.count
+        let leftoverRemaining = leftovers.filter { $0.percentage > 0 }.count
+        
+        return (bucketRemaining + leftoverRemaining, bucketCount + leftoverCount)
     }
     
     // MARK: - Process Scanning (Direct Translation of repo logic)

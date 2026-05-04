@@ -156,8 +156,8 @@ struct MenuBarItemRow: View {
                     switch newValue {
                     case 0: item.mode = .staticIcon
                     case 1: item.mode = .modelCount
-                    case 2: item.mode = .donutCircle(modelID: quotaManager.modelQuotas.first?.id ?? "")
-                    case 3: item.mode = .progressBar(modelID: quotaManager.modelQuotas.first?.id ?? "")
+                    case 2: item.mode = .donutCircle(targetID: quotaManager.modelQuotas.first?.id ?? "", isBucket: false)
+                    case 3: item.mode = .progressBar(targetID: quotaManager.modelQuotas.first?.id ?? "", isBucket: false)
                     default: break
                     }
                 }
@@ -169,43 +169,69 @@ struct MenuBarItemRow: View {
             }
             .pickerStyle(.segmented)
             
-            if case .donutCircle(let modelID) = item.mode {
-                ModelSelectionPicker(selection: Binding(
-                    get: { modelID },
-                    set: { item.mode = .donutCircle(modelID: $0) }
-                ), quotaManager: quotaManager)
+            if case .donutCircle(let targetID, let isBucket) = item.mode {
+                TargetSelectionPicker(targetID: targetID, isBucket: isBucket, quotaManager: quotaManager) { newID, newIsBucket in
+                    item.mode = .donutCircle(targetID: newID, isBucket: newIsBucket)
+                }
             }
             
-            if case .progressBar(let modelID) = item.mode {
-                ModelSelectionPicker(selection: Binding(
-                    get: { modelID },
-                    set: { item.mode = .progressBar(modelID: $0) }
-                ), quotaManager: quotaManager)
+            if case .progressBar(let targetID, let isBucket) = item.mode {
+                TargetSelectionPicker(targetID: targetID, isBucket: isBucket, quotaManager: quotaManager) { newID, newIsBucket in
+                    item.mode = .progressBar(targetID: newID, isBucket: newIsBucket)
+                }
             }
         }
         .padding(.vertical, 8)
     }
 }
 
-struct ModelSelectionPicker: View {
-    @Binding var selection: String
+struct TargetSelectionPicker: View {
+    let targetID: String
+    let isBucket: Bool
     @ObservedObject var quotaManager: QuotaManager
+    let onUpdate: (String, Bool) -> Void
     
     var body: some View {
         HStack {
-            Text("Model:").font(.caption).foregroundColor(.secondary)
-            Picker("", selection: $selection) {
-                if quotaManager.modelQuotas.isEmpty {
-                    Text("No models detected").tag("")
+            Picker("Type", selection: Binding(
+                get: { isBucket },
+                set: { newValue in
+                    let newID = newValue ? (quotaManager.buckets.first?.id.uuidString ?? "") : (quotaManager.modelQuotas.first?.id ?? "")
+                    onUpdate(newID, newValue)
+                }
+            )) {
+                Text("Model").tag(false)
+                Text("Bucket").tag(true)
+            }
+            .pickerStyle(.menu)
+            .frame(width: 80)
+            .labelsHidden()
+            
+            Picker("Target", selection: Binding(
+                get: { targetID },
+                set: { onUpdate($0, isBucket) }
+            )) {
+                if isBucket {
+                    if quotaManager.buckets.isEmpty {
+                        Text("No buckets defined").tag("")
+                    } else {
+                        ForEach(quotaManager.buckets) { bucket in
+                            Text(bucket.name).tag(bucket.id.uuidString)
+                        }
+                    }
                 } else {
-                    ForEach(quotaManager.modelQuotas) { quota in
-                        Text(quota.name).tag(quota.id)
+                    if quotaManager.modelQuotas.isEmpty {
+                        Text("No models detected").tag("")
+                    } else {
+                        ForEach(quotaManager.modelQuotas) { quota in
+                            Text(quota.name).tag(quota.id)
+                        }
                     }
                 }
             }
             .labelsHidden()
-            .controlSize(.small)
         }
+        .controlSize(.small)
     }
 }
 

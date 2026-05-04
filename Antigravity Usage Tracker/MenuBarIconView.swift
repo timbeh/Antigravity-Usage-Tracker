@@ -18,14 +18,14 @@ struct MenuBarIconView: View {
                 .font(.system(size: 14, weight: .medium))
         case .modelCount:
             ModelCountView(quotaManager: quotaManager)
-        case .donutCircle(let modelID):
-            if let quota = quotaManager.modelQuotas.first(where: { $0.id == modelID }) {
+        case .donutCircle(let targetID, let isBucket):
+            if let quota = quotaManager.resolveQuota(id: targetID, isBucket: isBucket) {
                 DonutCircleView(percentage: quota.percentage)
             } else {
                 Image(systemName: "questionmark.circle")
             }
-        case .progressBar(let modelID):
-            if let quota = quotaManager.modelQuotas.first(where: { $0.id == modelID }) {
+        case .progressBar(let targetID, let isBucket):
+            if let quota = quotaManager.resolveQuota(id: targetID, isBucket: isBucket) {
                 MenuBarProgressBarView(quota: quota)
             } else {
                 Image(systemName: "questionmark.square")
@@ -38,13 +38,12 @@ struct ModelCountView: View {
     @ObservedObject var quotaManager: QuotaManager
     
     var body: some View {
-        let total = quotaManager.modelQuotas.count
-        let remaining = quotaManager.modelQuotas.filter { $0.percentage > 0 }.count
+        let counts = quotaManager.resolveGroupedCount()
         
         HStack(spacing: 2) {
             Image(systemName: "cpu")
                 .font(.system(size: 10))
-            Text("\(remaining)/\(total)")
+            Text("\(counts.remaining)/\(counts.total)")
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
         }
     }
