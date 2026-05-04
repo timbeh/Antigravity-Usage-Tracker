@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct MenuBarView: View {
     @ObservedObject var quotaManager: QuotaManager
@@ -38,6 +39,14 @@ struct MenuBarView: View {
                 .onHover { hovering in
                     isHoveringSettings = hovering
                 }
+                .simultaneousGesture(DragGesture(minimumDistance: 0).onEnded { _ in
+                    // 1. Close the popover immediately so it doesn't block other windows
+                    NotificationCenter.default.post(name: NSNotification.Name("CloseMenuBarPopover"), object: nil)
+                    
+                    // 2. Force app activation and then request surfacing
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                    NotificationCenter.default.post(name: NSNotification.Name("RequestSettingsSurface"), object: nil)
+                })
                 // Adds a little padding so the click target is easier to hit
                 .padding(.trailing, 2)
             }

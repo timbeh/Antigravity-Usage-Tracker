@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     @ObservedObject var quotaManager: QuotaManager
@@ -133,7 +134,74 @@ struct SettingsView: View {
         .frame(width: 550, height: 500)
         .onAppear {
             NSApplication.shared.activate(ignoringOtherApps: true)
+            updateCollectionBehavior()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
+            handleWindowFocus(notification.object as? NSWindow)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            handleAppActivation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RequestSettingsSurface"))) { _ in
+            handleAppActivation()
+        }
+    }
+    
+    private func handleWindowFocus(_ window: NSWindow?) {
+        guard let window = window else { return }
+        let isSettings = window.title.contains("Settings") || 
+                       window.identifier?.rawValue == "com_apple_SwiftUI_Settings_window"
+        
+        if isSettings {
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            repositionWindowIfNeeded(window)
+        }
+    }
+    
+    private func handleAppActivation() {
+        // Multi-stage surfacing to ensure we win over any system-level window management
+        for delay in [0.05, 0.2, 0.4] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                for window in NSApp.windows {
+                    // Search for window by title, identifier, or if it contains our view type
+                    let looksLikeSettings = window.title.contains("Settings") || 
+                                          window.identifier?.rawValue.contains("Settings") == true ||
+                                          String(describing: window.contentView).contains("SettingsView")
+                    
+                    if window.isVisible && looksLikeSettings {
+                        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+                        window.orderFrontRegardless()
+                        window.makeKeyAndOrderFront(nil)
+                        repositionWindowIfNeeded(window)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func updateCollectionBehavior() {
+        for window in NSApp.windows {
+            if window.title.contains("Settings") || window.identifier?.rawValue == "com_apple_SwiftUI_Settings_window" {
+                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            }
+        }
+    }
+    
+    private func repositionWindowIfNeeded(_ window: NSWindow) {
+        // Find the screen containing the mouse cursor (where the menu bar click happened)
+        let mouseLocation = NSEvent.mouseLocation
+        let screens = NSScreen.screens
+        guard let currentScreen = screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) else { return }
+        
+        // Reposition to the center of the current screen
+        let screenFrame = currentScreen.visibleFrame
+        let windowFrame = window.frame
+        
+        let newX = screenFrame.midX - (windowFrame.width / 2)
+        let newY = screenFrame.midY - (windowFrame.height / 2)
+        
+        window.setFrameOrigin(NSPoint(x: newX, y: newY))
+        window.makeKeyAndOrderFront(nil)
     }
 }
 

@@ -39,6 +39,10 @@ class MenuBarManager: NSObject {
             .store(in: &cancellables)
             
         setupPopover()
+        
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("CloseMenuBarPopover"), object: nil, queue: .main) { [weak self] _ in
+            self?.popover?.performClose(nil)
+        }
     }
     
     private func setupPopover() {
