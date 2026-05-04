@@ -9,14 +9,16 @@ import SwiftUI
 
 @main
 struct Antigravity_Usage_TrackerApp: App {
-    @StateObject private var quotaManager = QuotaManager()
+    @StateObject private var quotaManager: QuotaManager
+    private let menuBarManager: MenuBarManager
+    
+    init() {
+        let qm = QuotaManager()
+        self._quotaManager = StateObject(wrappedValue: qm)
+        self.menuBarManager = MenuBarManager(quotaManager: qm)
+    }
 
     var body: some Scene {
-        MenuBarExtra("Antigravity Quota", systemImage: quotaManager.menuBarIcon) {
-            MenuBarView(quotaManager: quotaManager)
-        }
-        .menuBarExtraStyle(.window)
-        
         Settings {
             SettingsView(quotaManager: quotaManager)
         }

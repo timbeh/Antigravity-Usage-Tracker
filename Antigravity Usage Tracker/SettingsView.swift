@@ -99,10 +99,113 @@ struct SettingsView: View {
             .tabItem {
                 Label("Grouping", systemImage: "folder.fill")
             }
+            
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Menu Bar Items")
+                    .font(.headline)
+                
+                Text("Configure what information to show in your macOS menu bar. You can add multiple icons.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                List {
+                    ForEach($quotaManager.menuBarItems) { $item in
+                        MenuBarItemRow(item: $item, quotaManager: quotaManager)
+                    }
+                    .onDelete { indexSet in
+                        quotaManager.menuBarItems.remove(atOffsets: indexSet)
+                    }
+                }
+                .listStyle(.bordered)
+                
+                Button(action: {
+                    quotaManager.menuBarItems.append(MenuBarItemConfiguration(mode: .staticIcon))
+                }) {
+                    Label("Add Item", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .padding()
+            .tabItem {
+                Label("Menu Bar", systemImage: "menubar.rectangle")
+            }
         }
-        .frame(width: 480, height: 500)
+        .frame(width: 550, height: 500)
         .onAppear {
-                    NSApplication.shared.activate(ignoringOtherApps: true)
+            NSApplication.shared.activate(ignoringOtherApps: true)
         }
     }
 }
+
+struct MenuBarItemRow: View {
+    @Binding var item: MenuBarItemConfiguration
+    @ObservedObject var quotaManager: QuotaManager
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Display Type", selection: Binding(
+                get: { 
+                    switch item.mode {
+                    case .staticIcon: return 0
+                    case .modelCount: return 1
+                    case .donutCircle: return 2
+                    case .progressBar: return 3
+                    }
+                },
+                set: { newValue in
+                    switch newValue {
+                    case 0: item.mode = .staticIcon
+                    case 1: item.mode = .modelCount
+                    case 2: item.mode = .donutCircle(modelID: quotaManager.modelQuotas.first?.id ?? "")
+                    case 3: item.mode = .progressBar(modelID: quotaManager.modelQuotas.first?.id ?? "")
+                    default: break
+                    }
+                }
+            )) {
+                Text("Icon").tag(0)
+                Text("Count").tag(1)
+                Text("Donut").tag(2)
+                Text("Bar").tag(3)
+            }
+            .pickerStyle(.segmented)
+            
+            if case .donutCircle(let modelID) = item.mode {
+                ModelSelectionPicker(selection: Binding(
+                    get: { modelID },
+                    set: { item.mode = .donutCircle(modelID: $0) }
+                ), quotaManager: quotaManager)
+            }
+            
+            if case .progressBar(let modelID) = item.mode {
+                ModelSelectionPicker(selection: Binding(
+                    get: { modelID },
+                    set: { item.mode = .progressBar(modelID: $0) }
+                ), quotaManager: quotaManager)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+struct ModelSelectionPicker: View {
+    @Binding var selection: String
+    @ObservedObject var quotaManager: QuotaManager
+    
+    var body: some View {
+        HStack {
+            Text("Model:").font(.caption).foregroundColor(.secondary)
+            Picker("", selection: $selection) {
+                if quotaManager.modelQuotas.isEmpty {
+                    Text("No models detected").tag("")
+                } else {
+                    ForEach(quotaManager.modelQuotas) { quota in
+                        Text(quota.name).tag(quota.id)
+                    }
+                }
+            }
+            .labelsHidden()
+            .controlSize(.small)
+        }
+    }
+}
+

@@ -43,6 +43,27 @@ struct QuotaBucket: Codable, Identifiable, Hashable {
     var models: [String]
 }
 
+enum MenuBarDisplayMode: Codable, Equatable, Hashable {
+    case staticIcon
+    case modelCount
+    case donutCircle(modelID: String)
+    case progressBar(modelID: String)
+    
+    var displayName: String {
+        switch self {
+        case .staticIcon: return "Static Icon"
+        case .modelCount: return "Model Count (x/y)"
+        case .donutCircle: return "Donut Circle"
+        case .progressBar: return "Progress Bar"
+        }
+    }
+}
+
+struct MenuBarItemConfiguration: Identifiable, Codable, Hashable {
+    var id = UUID()
+    var mode: MenuBarDisplayMode
+}
+
 struct ServerConfig {
     let ports: [Int]
     let token: String
@@ -66,6 +87,14 @@ class QuotaManager: ObservableObject {
         didSet {
             if let data = try? JSONEncoder().encode(buckets) {
                 UserDefaults.standard.set(data, forKey: "savedBuckets")
+            }
+        }
+    }
+    
+    @Published var menuBarItems: [MenuBarItemConfiguration] = [] {
+        didSet {
+            if let data = try? JSONEncoder().encode(menuBarItems) {
+                UserDefaults.standard.set(data, forKey: "savedMenuBarItems")
             }
         }
     }
@@ -95,6 +124,14 @@ class QuotaManager: ObservableObject {
                 QuotaBucket(name: "Claude Thinking & GPT 120B", models:["Claude Sonnet 4.6 (Thinking)", "Claude Opus 4.6 (Thinking)", "GPT-OSS 120B (Medium)"]),
                 QuotaBucket(name: "Gemini 3 Flash", models: ["Gemini 3 Flash"])
             ]
+        }
+        
+        if let data = UserDefaults.standard.data(forKey: "savedMenuBarItems"),
+           let saved = try? JSONDecoder().decode([MenuBarItemConfiguration].self, from: data) {
+            self.menuBarItems = saved
+        } else {
+            // Default: just the static icon
+            self.menuBarItems = [MenuBarItemConfiguration(mode: .staticIcon)]
         }
             
         timer = Timer.scheduledTimer(withTimeInterval: 900, repeats: true) { [weak self] _ in
