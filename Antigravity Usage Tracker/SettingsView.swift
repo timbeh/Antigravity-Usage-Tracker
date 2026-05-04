@@ -80,6 +80,9 @@ struct SettingsView: View {
                     .onDelete { indexSet in
                         quotaManager.buckets.remove(atOffsets: indexSet)
                     }
+                    .onMove { indices, newOffset in
+                        quotaManager.buckets.move(fromOffsets: indices, toOffset: newOffset)
+                    }
                 }
                 .listStyle(.bordered)
                 
@@ -95,6 +98,12 @@ struct SettingsView: View {
                         newBucketName = ""
                     }
                 }
+                
+                Text("Drag to reorder • Swipe left to delete")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 4)
             }
             .padding()
             .tabItem {
@@ -116,6 +125,9 @@ struct SettingsView: View {
                     .onDelete { indexSet in
                         quotaManager.menuBarItems.remove(atOffsets: indexSet)
                     }
+                    .onMove { indices, newOffset in
+                        quotaManager.menuBarItems.move(fromOffsets: indices, toOffset: newOffset)
+                    }
                 }
                 .listStyle(.bordered)
                 
@@ -125,6 +137,12 @@ struct SettingsView: View {
                     Label("Add Item", systemImage: "plus")
                 }
                 .buttonStyle(.borderedProminent)
+                
+                Text("Drag to reorder • Swipe left to delete")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 4)
             }
             .padding()
             .tabItem {
