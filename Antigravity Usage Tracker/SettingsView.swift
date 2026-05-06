@@ -14,6 +14,49 @@ struct SettingsView: View {
     
     var body: some View {
         TabView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("General Settings")
+                    .font(.headline)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Refresh Frequency")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Picker("Refresh Every", selection: $quotaManager.refreshInterval) {
+                        Text("90 Seconds").tag(TimeInterval(90))
+                        Text("5 Minutes").tag(TimeInterval(300))
+                        Text("15 Minutes").tag(TimeInterval(900))
+                        Text("30 Minutes").tag(TimeInterval(1800))
+                        Text("1 Hour").tag(TimeInterval(3600))
+                    }
+                    .pickerStyle(.radioGroup)
+                    .padding(.leading, 4)
+                    
+                    Text("How often the app checks for new quota data from your IDE.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Divider()
+                
+                HStack {
+                    Text("Antigravity Usage Tracker")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("v1.0.0")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(30)
+            .tabItem {
+                Label("General", systemImage: "gear")
+            }
+
             VStack(alignment: .leading, spacing: 16) {
                 
                 Toggle("Enable Quota Grouping", isOn: $quotaManager.isGroupingEnabled)

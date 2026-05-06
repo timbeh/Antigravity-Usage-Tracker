@@ -99,6 +99,13 @@ class QuotaManager: ObservableObject {
         }
     }
     
+    @Published var refreshInterval: TimeInterval = 900 {
+        didSet {
+            UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
+            setupTimer()
+        }
+    }
+    
     var menuBarIcon: String {
         let lowestPercentage = modelQuotas.map { $0.percentage }.min() ?? 100
         switch lowestPercentage {
@@ -113,6 +120,9 @@ class QuotaManager: ObservableObject {
     init() {
         // Load Settings
         self.isGroupingEnabled = UserDefaults.standard.bool(forKey: "isGroupingEnabled")
+        
+        let savedInterval = UserDefaults.standard.double(forKey: "refreshInterval")
+        self.refreshInterval = savedInterval > 0 ? savedInterval : 900
             
         if let data = UserDefaults.standard.data(forKey: "savedBuckets"),
             let saved = try? JSONDecoder().decode([QuotaBucket].self, from: data) {
@@ -134,10 +144,17 @@ class QuotaManager: ObservableObject {
             self.menuBarItems = [MenuBarItemConfiguration(mode: .staticIcon)]
         }
             
-        timer = Timer.scheduledTimer(withTimeInterval: 900, repeats: true) { [weak self] _ in
-            Task { await self?.fetchQuota() }
-        }
+        setupTimer()
         Task { await fetchQuota() }
+    }
+    
+    private func setupTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: refreshInterval, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.fetchQuota()
+            }
+        }
     }
     
     // MARK: - Core Fetch Logic
